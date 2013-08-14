@@ -1,7 +1,6 @@
-// markdown = require('markdown')
-marked = require('marked')
-codemirror = require('codemirror')
-hljs = require('highlight.js')
+var marked = require('marked');
+var codemirror = require('codemirror');
+var hljs = require('highlight.js');
 
 marked.setOptions({
     highlight: function(code, lang) {
@@ -16,8 +15,11 @@ marked.setOptions({
     }
 });
 
+
 function sendMessage(message) {
     console.log(message);
+    $('#log').append($('<li/>', {html: marked(message)}));
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, "log"]);
 };
 
 var editor = CodeMirror.fromTextArea(document.getElementById("text-input"), {
