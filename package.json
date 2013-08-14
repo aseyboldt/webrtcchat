@@ -1,0 +1,14 @@
+{
+  "author": "Adrian Seyboldt",
+  "name": "chat",
+  "version": "0.0.1",
+  "repository": {
+    "url": ""
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
