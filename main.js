@@ -2,6 +2,8 @@ var marked = require('marked');
 var codemirror = require('codemirror');
 var hljs = require('highlight.js');
 
+
+
 marked.setOptions({
     highlight: function(code, lang) {
         if (hljs.LANGUAGES[lang]) {
@@ -16,17 +18,17 @@ marked.setOptions({
 });
 
 
-function sendMessage(message) {
-    console.log(message);
-    $('#log').append($('<li/>', {html: marked(message)}));
-    MathJax.Hub.Queue(["Typeset", MathJax.Hub, "log"]);
-};
-
 var editor = CodeMirror.fromTextArea(document.getElementById("text-input"), {
     mode: 'markdown',
     lineNumbers: true,
     theme: "default"
 });
+
+
+function showMessage(message) {
+    $('#log').append($('<li/>', {html: marked(message)}));
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, "log"]);
+};
 
 
 editor.on("change", function (cm, changeObj) {
@@ -36,9 +38,41 @@ editor.on("change", function (cm, changeObj) {
 });
 
 
-editor.on("keyup", function (cm, event) {
-    if (event.which == 13 && event.shiftKey) {
-        sendMessage(editor.getValue());
-        editor.setValue("");
-    }
+function startChat(conn) {
+    conn.on('data', function(data) {
+        showMessage(data);
+    });
+
+    editor.on("keyup", function (cm, event) {
+        if (event.which == 13 && event.shiftKey) {
+            conn.send(editor.getValue());
+            editor.setValue("");
+        }
+    });
+};
+
+
+$('#listenForm').submit(function() {
+    var localId = $('#localIdForm').val();
+    var serverKey = $('#serverKeyForm').val();
+
+    var peer = new Peer(localId, {key: serverKey});
+
+
+    peer.on('connection', function (conn) {
+        startChat(conn);
+    });
+
+    $('#connectForm').submit(function() {
+        var remoteId = $('#remoteIdForm').val();
+        var conn = peer.connect(remoteId);
+        conn.on('open', function () {
+            startChat(conn);
+        });
+        return false;
+    });
+    return false;
 });
+
+
+
