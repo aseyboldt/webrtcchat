@@ -5,10 +5,27 @@
   "repository": {
     "url": ""
   },
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "marked": "~0.2.9",
+    "underscore": "~1.5.2",
+    "backbone": "~1.0.0",
+    "highlight.js": "~7.3.0",
+    "jquery-browserify": "~1.8.1",
+    "code-mirror": "~3.18.0",
+    "browserify-jade": "0.0.5"
+  },
+  "devDependencies": {
+    "coffeeify": "~0.5.1",
+    "browserify": "~2.34.0"
+  },
   "optionalDependencies": {},
   "engines": {
     "node": "*"
-  }
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "description": "simple chat app using peerjs",
+  "main": "main.js",
+  "license": "BSD"
 }
