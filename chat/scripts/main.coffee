@@ -26,20 +26,20 @@ class LocalUserModel extends backbone.Model
         id: 123456
 
 
-    validate: (attrs, options) ->
+    validate: (attrs, options) =>
         if attrs.name != 'hallo'
             return "invalid name (testing...)"
 
 
 class LocalUserView extends backbone.View
-    el: $ 'body'
+    el: $('#local-user')
 
     initialize: ->
         @render()
 
-    render: ->
-        html = require('../templates/local_user.jade')
-        $(@el).append html
+    render: =>
+        template = require('../templates/local_user.jade')
+        @$el.html template
             local_user: @model.toJSON()
 
 class InputModel extends backbone.Model
@@ -52,20 +52,62 @@ class InputView extends backbone.View
     el: $('#preview')
 
     initialize: ->
-        _.bindAll @, 'render'
         @render
 
-    render: ->
+    render: =>
         @$el.html marked @model.get 'text'
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub, "preview"])
+        if MathJax?
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "preview"])
 
 
+class Message extends backbone.Model
 
+    defaults:
+        text: ""
+        time: ""
+        from: ""
+        id: 1
+
+class MessageList extends backbone.Collection
+
+    model: Message
+
+
+class MessageView extends backbone.View
+    el: '#message-list'
+
+    initialize: ->
+        @template = require('../templates/message.jade')
+        @render()
+
+    render: =>
+        message_data = @model.toJSON()
+        message_data['text'] = marked message_data['text']
+        @$el.append @template message_data
+        if MathJax?
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, @el])
+
+class MessageListView extends backbone.View
+    el: '#log'
+
+    initialize: ->
+        @elements = {}
+        @template = require('../templates/message_list.jade')
+        @render()
+
+    render: =>
+        @$el.html @template()
+
+    add: (message) =>
+        message_view = new MessageView
+            model: message
+        @model.add(message)
+        @elements[message_view.model.id] = message
 
 
 # show dialog to ask for name
 # save result in new object in window
-show_name_dialog = ->
+show_name_dialog = (local_user) ->
     dialog_template = require('../templates/name_dialog.jade')
     $('#log').append dialog_template()
     name = $('#local-user-name')
@@ -88,15 +130,15 @@ $ ->
     local_user_view = new LocalUserView
         model: local_user
 
-    show_name_dialog()
+    local_user.on("change", local_user_view.render)
 
+    show_name_dialog(local_user)
 
     input_model = new InputModel
     input_view = new InputView
         model: input_model
 
     input_model.on("change", input_view.render)
-
 
     editor = codemirror.fromTextArea $('#text-input').get(0),
         mode: 'markdown'
@@ -106,3 +148,16 @@ $ ->
     editor.on "change", (cm, change_obj) ->
         input_model.set
             text: editor.getValue()
+
+    message_list = new MessageList
+    message_list_view = new MessageListView
+        model: message_list
+
+    editor.on "keyup", (cm, event) ->
+        if event.which == 13 and event.shiftKey
+            message = new Message
+            message.set
+                from: local_user.get 'name'
+                text: editor.getValue()
+            editor.setValue("")
+            message_list_view.add message
