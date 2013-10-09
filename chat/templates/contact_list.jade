@@ -1,0 +1,20 @@
+button#btn-add-contact.btn.btn-primary(type='button') Add contact
+
+#add-contact-dialog.modal.fade
+    .modal-dialog
+        .modal-content
+            .modal-header
+                h4.modal-title
+                    | Add contact
+            .modal-body
+                form(role='form')
+                    .form-group
+                        label.control-label(for='contact-name') Name of contact
+                        input#add-contact-name.form-control(type='text', name='add-contact-name', placeholder='Enter name')
+                    .form-group
+                        label.control-label(for='contact-connect-id') Connection id
+                        input#add-contact-id.form-control(type='text', name='add-contact-id', placeholder='Enter id of contact')
+            .modal-footer
+                button#btn-save-contact.btn.btn-primary(type='button') Add
+
+ul#contact-list

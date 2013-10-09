@@ -27,11 +27,28 @@ class LocalUserModel extends backbone.Model
         name: 'anonymus'
         server_key: 0
         id: 123456
-
+        peer: null
 
     validate: (attrs, options) =>
-        if attrs.name != 'hallo'
-            return "invalid name (testing...)"
+        return null
+
+    start: =>
+        peer = new Peer
+            id: @get 'name'
+            key: @get 'server_key'
+            host: 'localhost'
+            port: 9000
+            debug: 2
+        @set peer: peer
+        peer.on 'error', (e) =>
+            alert e
+        peer.on 'open', =>
+            @set id: (@get 'peer').id
+            @trigger 'open'
+        peer.on 'close', =>
+            alert "connection to server closed"
+        peer.on 'connection', (conn) =>
+            @trigger 'request_conn'
 
 
 class LocalUserView extends backbone.View
@@ -39,11 +56,13 @@ class LocalUserView extends backbone.View
 
     initialize: ->
         @render()
+        @model.on 'change', =>
+            @render()
 
     render: =>
         template = require('../templates/local_user.jade')
-        @$el.html template
-            local_user: @model.toJSON()
+        @$el.html template @model.toJSON()
+
 
 class InputModel extends backbone.Model
 
@@ -71,6 +90,7 @@ class Message extends backbone.Model
         from: ""
         id: 1
 
+
 class MessageList extends backbone.Collection
 
     model: Message
@@ -97,6 +117,8 @@ class MessageListView extends backbone.View
         @elements = {}
         @template = require('../templates/message_list.jade')
         @render()
+        @model.on 'add', (message) =>
+            @add message
 
     render: =>
         @$el.html @template()
@@ -108,6 +130,115 @@ class MessageListView extends backbone.View
         @elements[message_view.model.id] = message
 
 
+class Contact extends backbone.Model
+
+    defaults:
+        name: "anonymus"
+        conn: null
+        messages: null
+        online: false
+
+    initialize: ->
+        @set messages: new MessageList
+
+        @on 'change:conn', (model, conn) =>
+            if @previous('conn')?
+                @previous('conn').close()
+            if conn?
+                conn.on 'data', (data) =>
+                    @recv data
+                conn.on 'close', =>
+                    @trigger 'close'
+                    @set conn: null
+                conn.on 'error' (e) =>
+                    alert e
+
+    connect: (peer) =>
+        conn = peer.connect(id: @get 'id')
+        @set conn: conn
+
+    send: (message) =>
+        if not @conn? or not @ready
+            @trigger 'conn:error', "No active connection"
+        else
+            (@get 'conn').send(message.text)
+            messages.add(message)
+
+    resv: (data) =>
+        message = new Message
+            text: data
+            from: @get 'name'
+        @messages.add message
+
+
+class ContactList extends backbone.Collection
+    model: Contact
+
+    initialize: =>
+        "todo: set @active_contact, @input"
+
+    activate: (contact) =>
+        "todo"
+
+
+class ContactView extends backbone.View
+    el: '#contact-list'
+
+    initialize: ->
+        @template = require('../templates/contact.jade')
+        @messages_view
+        @render()
+
+    render: =>
+        @$el.append @template @model.toJSON()
+
+
+class ContactListView extends backbone.View
+    el: '#contacts'
+
+    initialize: ->
+        @template = require('../templates/contact_list.jade')
+        @local_user = @options['local_user']
+        @elements = {}
+        @render()
+
+        $('#btn-add-contact').click =>
+            $('#add-contact-dialog').modal('show')
+
+        $('#btn-save-contact').click =>
+            new_contact = new Contact
+                name: $('#add-contact-name').val()
+                id: $('#add-contact-id').val()
+            @add(new_contact)
+            $('#add-contact-dialog').modal('hide')
+
+        @local_user.on('request_conn'), @request_conn
+
+    add: (contact) =>
+        contact_view = new ContactView
+            model: contact
+        @elements[contact.id] = contact_view
+        @model.add(contact)
+
+    render: =>
+        @$el.html @template()
+
+    request_conn: (conn) =>
+        # if contact exists: choose it
+        #
+        # else: create new Contact and ContactView...
+        #
+        # Switch Input to contact and show corresponding MessageListView
+        if @model.has_contact(conn)
+            # open dialog: ask if user wants to accept connection
+            # Return if not
+        else
+            # open dialog: ask if user wants to accept connection and ask
+            # for name. Return if not
+        contact = null # corresponding contact
+        @model.activate(contact)
+
+
 # show dialog to ask for name
 # save result in new object in window
 show_name_dialog = (local_user) ->
@@ -116,9 +247,7 @@ show_name_dialog = (local_user) ->
     $('#name-dialog').modal('show')
     name = $('#local-user-name')
     server_key = $('#server-key')
-    console.log "hi"
     $('#btn-save-name-dialog').click ->
-        console.log "Hallo"
         local_user.set
             name: name.val()
             server_key: server_key.val()
@@ -127,17 +256,15 @@ show_name_dialog = (local_user) ->
             server_key.parent().addClass('has-error')
         else
             $('#name-dialog').modal('hide')
+            local_user.connect()
 
 
 $ ->
     $('#sidebar').affix()
-    #$('#input-area').affix()
 
     local_user = new LocalUserModel
     local_user_view = new LocalUserView
         model: local_user
-
-    local_user.on("change", local_user_view.render)
 
     show_name_dialog(local_user)
 
@@ -157,15 +284,28 @@ $ ->
         input_model.set
             text: editor.getValue()
 
-    message_list = new MessageList
-    message_list_view = new MessageListView
-        model: message_list
+    contacts = new ContactList
+    contacts_view = new ContactListView
+        model: contacts
 
-    editor.on "keyup", (cm, event) ->
-        if event.which == 13 and event.shiftKey
-            message = new Message
-            message.set
-                from: local_user.get 'name'
-                text: editor.getValue()
-            editor.setValue("")
-            message_list_view.add message
+    active_contact = null
+    message_list_view = null
+
+    local_user.on 'open', =>
+
+        local_user.on 'connection', =>
+            contact = new Contact
+
+        contacts.on 'add', (contact) =>
+            active_contact = contact
+            message_list_view = new MessageListView
+                model: active_contact.get 'messages'
+
+            editor.on "keyup", (cm, event) ->
+                if event.which == 13 and event.shiftKey
+                    message = new Message
+                    message.set
+                        from: local_user.get 'name'
+                        text: editor.getValue()
+                    editor.setValue("")
+                    active_contact.send message
