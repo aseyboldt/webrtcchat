@@ -112,21 +112,22 @@ class MessageListView extends backbone.View
 # save result in new object in window
 show_name_dialog = (local_user) ->
     dialog_template = require('../templates/name_dialog.jade')
-    $('#log').append dialog_template()
+    $('body').append dialog_template()
+    $('#name-dialog').modal('show')
     name = $('#local-user-name')
     server_key = $('#server-key')
-    $('#name-dialog').dialog
-        modal: true
-        buttons:
-            "start": ->
-                local_user.set
-                    name: name.val()
-                    server_key: server_key.val()
-                if not local_user.isValid()
-                    name.addClass('ui-state-error')
-                    server_key.addClass('ui-state-error')
-                else
-                    $('#name-dialog').dialog("close")
+    console.log "hi"
+    $('#btn-save-name-dialog').click ->
+        console.log "Hallo"
+        local_user.set
+            name: name.val()
+            server_key: server_key.val()
+        if not local_user.isValid()
+            name.parent().addClass('has-error')
+            server_key.parent().addClass('has-error')
+        else
+            $('#name-dialog').modal('hide')
+
 
 $ ->
     $('#sidebar').affix()

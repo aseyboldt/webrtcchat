@@ -1,7 +1,16 @@
-#name-dialog(title='Choose name')
-    form
-        fieldset
-            label(for='name') Name
-            input#local-user-name.text.ui-widget-content.ui-corner-all(type='text', name='name')
-            label(for='server-key') Key for server
-            input#server-key.text.ui-widget-content.ui-corner-all(type='text', name='server-key')
+#name-dialog.modal.fade
+    .modal-dialog
+        .modal-content
+            .modal-header
+                h4.modal-title
+                    | Choose user name and server
+            .modal-body
+                form(role='form')
+                    .form-group
+                        label.control-label(for='local-user-name') Nick name
+                        input#local-user-name.form-control(type='text', name='name', placeholder='Enter name')
+                    .form-group
+                        label.control-label(for='server-key') Server key
+                        input#server-key.form-control(type='text', name='server-key')
+            .modal-footer
+                button#btn-save-name-dialog.btn.btn-primary(type='button') Save
