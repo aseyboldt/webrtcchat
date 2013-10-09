@@ -5,17 +5,20 @@ marked = require('marked')
 codemirror = require('code-mirror')
 backbone = require('backbone')
 jade = require('jade-runtime')
-#peerjs = require('./lib/peer')
+bootstrap = require('../../node_modules/twitter-bootstrap-3.0.0/dist/js/bootstrap.js')
+#peerjs = require('./lib/peerjs/dist/peer.js')
 
 backbone.$ = $
 
 # tell marked to highlight source code
+# and sanitize the input
 marked.setOptions
     highlight: (code, lang) ->
         if hljs.LANGUAGES[lang]
             return hljs.highlight(lang, code).value
         else
             return hljs.highlightAuto(code).value
+    sanitize: true
 
 
 class LocalUserModel extends backbone.Model
@@ -126,6 +129,9 @@ show_name_dialog = (local_user) ->
                     $('#name-dialog').dialog("close")
 
 $ ->
+    $('#sidebar').affix()
+    #$('#input-area').affix()
+
     local_user = new LocalUserModel
     local_user_view = new LocalUserView
         model: local_user
@@ -144,6 +150,7 @@ $ ->
         mode: 'markdown'
         lineNumbers: true
         theme: 'default'
+        height: 5
 
     editor.on "change", (cm, change_obj) ->
         input_model.set
