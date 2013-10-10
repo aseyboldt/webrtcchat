@@ -62,7 +62,7 @@ class LocalUserModel extends backbone.Model
             debug: 3
         @set peer: peer
         peer.on 'error', (e) =>
-            alert e
+            alert "Peer reported an error: " + e
         peer.on 'open', =>
             @set id: (@get 'peer').id
             @trigger 'open'
@@ -228,13 +228,14 @@ class Contact extends backbone.Model
             if @previous('conn')?
                 @previous('conn').close()
             if conn?
-                conn.on 'data', (data) =>
-                    @recv data
-                conn.on 'close', =>
-                    @trigger 'close'
-                    @set conn: null
+                conn.on 'open', =>
+                    conn.on 'data', (data) =>
+                        @recv data
+                    conn.on 'close', =>
+                        alert "closing connection"
+                        @trigger 'close'
                 conn.on 'error', (e) =>
-                    alert e
+                    alert "Error in connection: " + e
 
     connect: =>
         alert 'Try to connect to ' + @get 'id'
