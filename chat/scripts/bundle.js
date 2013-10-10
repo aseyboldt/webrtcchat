@@ -91,7 +91,7 @@ LocalUserModel = (function(_super) {
       peer: peer
     });
     peer.on('error', function(e) {
-      return alert(e);
+      return alert("Peer reported an error: " + e.message);
     });
     peer.on('open', function() {
       _this.set({
@@ -103,7 +103,7 @@ LocalUserModel = (function(_super) {
       return alert("connection to server closed");
     });
     return peer.on('connection', function(conn) {
-      alert('connection request in local_user from ' + conn.id);
+      alert('connection request in local_user from ' + conn.peer);
       return _this.trigger('request_conn', conn);
     });
   };
@@ -367,7 +367,8 @@ Contact = (function(_super) {
   Contact.prototype.defaults = {
     name: "anonymus",
     conn: null,
-    messages: null
+    messages: null,
+    peer_id: null
   };
 
   Contact.prototype.initialize = function(options) {
@@ -384,17 +385,25 @@ Contact = (function(_super) {
         _this.previous('conn').close();
       }
       if (conn != null) {
-        conn.on('data', function(data) {
-          return _this.recv(data);
-        });
-        conn.on('close', function() {
-          _this.trigger('close');
-          return _this.set({
-            conn: null
+        if (conn.open) {
+          conn.on('data', function(data) {
+            return _this.resv(data);
           });
-        });
+          conn.on('close', function() {
+            return alert("closing connection");
+          });
+        } else {
+          conn.on('open', function() {
+            conn.on('data', function(data) {
+              return _this.resv(data);
+            });
+            return conn.on('close', function() {
+              return alert("closing connection");
+            });
+          });
+        }
         return conn.on('error', function(e) {
-          return alert(e);
+          return alert("Error in connection: " + e.message);
         });
       }
     });
@@ -402,12 +411,10 @@ Contact = (function(_super) {
 
   Contact.prototype.connect = function() {
     var conn;
-    alert('Try to connect to ' + this.get('id'));
-    conn = this.local_user.get('peer').connect({
-      id: this.get('id')
-    });
+    alert('Try to connect to ' + this.get('peer_id'));
+    conn = this.local_user.get('peer').connect(this.get('peer_id'));
     return this.set({
-      conn: conn
+      'conn': conn
     });
   };
 
@@ -416,16 +423,16 @@ Contact = (function(_super) {
     messages = this.get('messages');
     alert(message.get('text'));
     messages.add(message);
-    if (this.conn == null) {
+    if (this.get('conn') == null) {
       return this.trigger('error', "No active connection");
     } else {
-      (this.get('conn')).send(message.text);
-      return messages.add(message);
+      return (this.get('conn')).send(message.get('text'));
     }
   };
 
   Contact.prototype.resv = function(data) {
     var message;
+    alert("New Message: " + data);
     message = new Message({
       text: data,
       from: this.get('name')
@@ -466,14 +473,13 @@ ContactList = (function(_super) {
   ContactList.prototype.find_contact = function(conn) {
     var _this = this;
     return this.find(function(contact) {
-      return conn.id === contact.get('id');
+      return conn.peer === contact.get('peer_id');
     });
   };
 
   ContactList.prototype.activate = function(contact) {
-    alert("activating contact " + contact.get('id'));
-    this.active_contact = contact;
-    return contact.connect();
+    alert("activating contact " + contact.get('peer_id'));
+    return this.active_contact = contact;
   };
 
   return ContactList;
@@ -499,7 +505,8 @@ ContactView = (function(_super) {
       model: this.model.get('messages')
     });
     return this.$el.click(function() {
-      return _this.model.trigger('select', _this.model);
+      _this.trigger('activate');
+      return _this.model.connect();
     });
   };
 
@@ -538,7 +545,7 @@ ContactListView = (function(_super) {
       var new_contact;
       new_contact = new Contact({
         name: $('#add-contact-name').val(),
-        id: $('#add-contact-id').val(),
+        peer_id: $('#add-contact-id').val(),
         local_user: _this.local_user
       });
       _this.add(new_contact);
@@ -548,9 +555,13 @@ ContactListView = (function(_super) {
   };
 
   ContactListView.prototype.add = function(contact) {
-    var contact_view;
+    var contact_view,
+      _this = this;
     contact_view = new ContactView({
       model: contact
+    });
+    contact_view.on('activate', function() {
+      return _this.model.activate(contact);
     });
     this.elements[contact.id] = contact_view;
     return this.model.add(contact);
@@ -562,10 +573,13 @@ ContactListView = (function(_super) {
 
   ContactListView.prototype.request_conn = function(conn) {
     var contact;
-    alert("Connection request from " + conn.id);
+    alert("Connection request from " + conn.peer);
     contact = this.model.find_contact(conn);
     if (contact != null) {
-      return this.model.trigger('select', contact);
+      this.model.activate(contact);
+      return contact.set({
+        'conn': conn
+      });
     } else {
       return alert('contact unknown');
     }
