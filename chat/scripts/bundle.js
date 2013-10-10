@@ -85,8 +85,6 @@ LocalUserModel = (function(_super) {
     peer = new Peer({
       id: this.get('name'),
       key: this.get('server_key'),
-      host: 'localhost',
-      port: 9000,
       debug: 3
     });
     this.set({
