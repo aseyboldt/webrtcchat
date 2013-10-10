@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Browser chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../node_modules/twitter-bootstrap-3.0.0/dist/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link rel="stylesheet" href="scripts/vendor/codemirror/lib/codemirror.css">
+    <link href="./less/webchat.css" rel="stylesheet" media="screen">
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">Browser Chat</a>
+            </div>
+            <div class="navbar-right">
+                <div id="local-user"></div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3" id="sidebarcol">
+                <div id="sidebar" data-clampedwidth="#sidebarcol">
+                    <div id="contacts"></div>
+                </div>
+            </div>
+            <div class="col-lg-9" id="inputcol">
+                <div id="input-area" data-clampedwidth="#inputcol"></div>
+                <h3> Chatprotokoll </h3>
+                <div id="log"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The browser should load these scripts and stylesheets at the end -->
+    <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+    <script src="./scripts/bundle.js"></script>
+    <!--<link rel="stylesheet"
+        href="http://yandex.st/highlightjs/7.3/styles/default.min.css">
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+        });
+    </script>
+    <script type="text/javascript"
+             src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script> -->
+</body>
+</html>
