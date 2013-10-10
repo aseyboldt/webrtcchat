@@ -21,26 +21,14 @@
     </div>
     <div class="container">
         <div class="row">
-            <div class="col-lg-2">
-                <div id="sidebar">
-                    <h2> Contacts </h2>
+            <div class="col-lg-3" id="sidebarcol">
+                <div id="sidebar" data-clampedwidth="#sidebarcol">
                     <div id="contacts"></div>
                 </div>
             </div>
-            <div class="col-lg-10">
-                <div id="input-area" class="row">
-                    <div class="col-lg-6">
-                        <h1>Input</h1>
-                        <form>
-                            <textarea id="text-input" name="text-input" rows="3"></textarea>
-                        </form>
-                    </div>
-                    <div class="col-lg-6">
-                        <h1>Preview</h1>
-                        <div id="preview"></div>
-                    </div>
-                </div>
-                <h2> Chatprotokoll </h2>
+            <div class="col-lg-9" id="inputcol">
+                <div id="input-area" data-clampedwidth="#inputcol"></div>
+                <h3> Chatprotokoll </h3>
                 <div id="log"></div>
             </div>
         </div>

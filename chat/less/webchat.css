@@ -1,0 +1,13 @@
+body {
+  padding-top: 70px;
+  padding-bottom: 30px;
+}
+
+.CodeMirror {
+    height: auto;
+    overflow-y: "hidden";
+}
+
+#input-area {
+    background: "white";
+}
