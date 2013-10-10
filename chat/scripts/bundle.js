@@ -418,7 +418,6 @@ Contact = (function(_super) {
     messages = this.get('messages');
     alert(message.get('text'));
     messages.add(message);
-    messages.add(message);
     if (this.conn == null) {
       return this.trigger('error', "No active connection");
     } else {
@@ -433,7 +432,7 @@ Contact = (function(_super) {
       text: data,
       from: this.get('name')
     });
-    return this.messages.add(message);
+    return this.get('messages').add(message);
   };
 
   return Contact;
