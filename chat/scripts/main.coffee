@@ -59,8 +59,6 @@ class LocalUserModel extends backbone.Model
         peer = new Peer
             id: @get 'name'
             key: @get 'server_key'
-            host: 'localhost'
-            port: 9000
             debug: 3
         @set peer: peer
         peer.on 'error', (e) =>
