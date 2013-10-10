@@ -62,14 +62,14 @@ class LocalUserModel extends backbone.Model
             debug: 3
         @set peer: peer
         peer.on 'error', (e) =>
-            alert "Peer reported an error: " + e
+            alert "Peer reported an error: " + e.message
         peer.on 'open', =>
             @set id: (@get 'peer').id
             @trigger 'open'
         peer.on 'close', =>
             alert "connection to server closed"
         peer.on 'connection', (conn) =>
-            alert 'connection request in local_user from ' + conn.id
+            alert 'connection request in local_user from ' + conn.peer
             @trigger 'request_conn', conn
 
 
@@ -216,6 +216,7 @@ class Contact extends backbone.Model
         name: "anonymus"
         conn: null
         messages: null
+        peer_id: null
 
     initialize: (options) ->
         @set messages: new MessageList
@@ -228,31 +229,36 @@ class Contact extends backbone.Model
             if @previous('conn')?
                 @previous('conn').close()
             if conn?
-                conn.on 'open', =>
+                if conn.open
                     conn.on 'data', (data) =>
-                        @recv data
+                        @resv data
                     conn.on 'close', =>
                         alert "closing connection"
-                        @trigger 'close'
+                else
+                    conn.on 'open', =>
+                        conn.on 'data', (data) =>
+                            @resv data
+                        conn.on 'close', =>
+                            alert "closing connection"
                 conn.on 'error', (e) =>
-                    alert "Error in connection: " + e
+                    alert "Error in connection: " + e.message
 
     connect: =>
-        alert 'Try to connect to ' + @get 'id'
-        conn = @local_user.get('peer').connect(id: @get 'id')
-        @set conn: conn
+        alert 'Try to connect to ' + @get 'peer_id'
+        conn = @local_user.get('peer').connect(@get 'peer_id')
+        @set 'conn': conn
 
     send: (message) =>
         messages = @get 'messages'
         alert message.get 'text'
         messages.add(message)
-        if not @conn?
+        if not @get('conn')?
             @trigger 'error', "No active connection"
         else
-            (@get 'conn').send(message.text)
-            messages.add(message)
+            (@get 'conn').send(message.get 'text')
 
     resv: (data) =>
+        alert "New Message: " + data
         message = new Message
             text: data
             from: @get 'name'
@@ -276,12 +282,11 @@ class ContactList extends backbone.Collection
 
     find_contact: (conn) =>
         return @find (contact) =>
-            return conn.id == contact.get 'id'
+            return conn.peer == contact.get 'peer_id'
 
     activate: (contact) =>
-        alert "activating contact " + contact.get 'id'
+        alert "activating contact " + contact.get 'peer_id'
         @active_contact = contact
-        contact.connect()
 
 
 class ContactView extends backbone.View
@@ -293,7 +298,8 @@ class ContactView extends backbone.View
         @messages_view = new MessageListView
             model: @model.get 'messages'
         @$el.click =>
-            @model.trigger 'select', @model
+            @trigger 'activate'
+            @model.connect()
 
     render: =>
         @$el.append @template @model.toJSON()
@@ -315,7 +321,7 @@ class ContactListView extends backbone.View
         $('#btn-save-contact').click =>
             new_contact = new Contact
                 name: $('#add-contact-name').val()
-                id: $('#add-contact-id').val()
+                peer_id: $('#add-contact-id').val()
                 local_user: @local_user
             @add(new_contact)
             $('#add-contact-dialog').modal('hide')
@@ -325,6 +331,8 @@ class ContactListView extends backbone.View
     add: (contact) =>
         contact_view = new ContactView
             model: contact
+        contact_view.on 'activate', =>
+            @model.activate(contact)
         @elements[contact.id] = contact_view
         @model.add(contact)
 
@@ -337,12 +345,13 @@ class ContactListView extends backbone.View
         # else: create new Contact and ContactView...
         #
         # Switch Input to contact and show corresponding MessageListView
-        alert "Connection request from " + conn.id
+        alert "Connection request from " + conn.peer
         contact = @model.find_contact(conn)
         if contact?
             # open dialog: ask if user wants to accept connection
             # Return if not
-            @model.trigger 'select', contact
+            @model.activate contact
+            contact.set 'conn': conn
         else
             # open dialog: ask if user wants to accept connection and ask
             # for name. Return if not
